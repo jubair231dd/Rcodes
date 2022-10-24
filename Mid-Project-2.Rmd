@@ -1,0 +1,137 @@
+---
+title: "Mid Project 2"
+author: "Md Jubair Pantho"
+date: "2022-10-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+#Importing the libraries
+```{r}
+rm(list=ls())
+library(tidyverse)
+library(lubridate)
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+
+```
+
+# Loading the data
+```{r}
+tb = read_tsv("variant_surveillance_2022_09_12.tsv")
+```
+
+#Columns names 
+```{r}
+names(tb)
+```
+
+# Selecting new data frame
+```{r}
+tb_new = tb %>% select("Clade", "Location", "Collection date")
+head(tb_new)
+```
+
+#Changing the names of the locations to shorter format
+```{r}
+tb_new$Location = gsub("Oceania /.*","Oceania", tb_new$Location)
+tb_new$Location = gsub("North America /.*","North America", tb_new$Location)
+tb_new$Location = gsub("North Americal /.*","North America", tb_new$Location)
+tb_new$Location = gsub("North America/.*","North America", tb_new$Location)
+tb_new$Location = gsub("South America /.*","South America", tb_new$Location)
+tb_new$Location = gsub("South Smerica /.*","South America", tb_new$Location)
+tb_new$Location = gsub("Europe /.*","Europe", tb_new$Location)
+tb_new$Location = gsub("Asia /.*","Asia", tb_new$Location)
+tb_new$Location = gsub("Central Asia /.*","Asia", tb_new$Location)
+tb_new$Location = gsub("Africa /.*","Africa", tb_new$Location)
+tb_new$Location = gsub("USA /.*","North America", tb_new$Location)
+```
+```{r}
+tb_new
+```
+
+# Finding the unique locations
+```{r}
+tb_new $ Location %>% unique()
+```
+
+# Changing the column names of tb_new
+```{r}
+names(tb_new) = c("Clade", "Location", "Date")
+head(tb_new)
+```
+
+#Converting the date to date object
+```{r}
+tb_new$Date = as.Date(tb_new$Date, format ="%Y-%m-%d")
+head(tb_new)
+```
+
+#Fropping all the rows having NA values
+```{r}
+tb_new = tb_new %>% drop_na()
+
+tb_new_selected = tb_new %>% select(-c("Location"))
+tb_new_selected
+```
+#Grouping the date by month
+```{r}
+tb_new_1 = tb_new_selected %>% group_by(Clade, month = lubridate::floor_date(Date,'month')) %>% tally()
+tb_new_1
+
+tb_new_2 = tb_new_1 %>% filter(month>mdy("1/1/2020") & month<mdy("9/9/2022"))
+tb_new_2
+```
+#Plotting the bar chart
+```{r}
+ggplot(tb_new_2, aes(x = month, y = n, fill=Clade))+
+  geom_bar(position = "fill", stat="identity") + xlab("year_month")
+```
+
+# New data frame for Pi chart
+```{r}
+tb_new_3 = tb_new %>% select(-c("Date"))
+tb_new_3
+```
+```{r}
+tb_new_4 = tb_new_3 %>% group_by(Clade, Location) %>% tally()
+tb_new_4
+```
+ #Plotting the pi chart
+ 
+```{r}
+ggplot(tb_new_4, aes(x = 1, y = n, fill=Clade))+
+  geom_bar(position = "fill", stat="identity")+ facet_grid(~Clade, scales ="free_y", space = "free") + facet_wrap(~Location) + coord_polar(theta = "y") + scale_y_continuous()+
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_blank()
+        
+        )
+```
+ 
+
